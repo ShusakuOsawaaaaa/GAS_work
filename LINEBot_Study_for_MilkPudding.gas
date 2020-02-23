@@ -1,0 +1,68 @@
+var ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty("CHANNEL_ACCESS_TOKEN");
+var ID = PropertiesService.getScriptProperties().getProperty("USER_ID");
+var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('学び');
+var allRows = sheet.getRange("A2:A").getValues();
+var nowCount = allRows.filter(String).length;
+
+function count(){
+  var rest = 20 - (nowCount % 20);
+  return rest;
+}
+
+function doPost(e) {
+  var replyToken= JSON.parse(e.postData.contents).events[0].replyToken;
+  
+  var replyMessage = "うるせえぞ！黙ってあと${count}個学びやがれ！".replace("${count}", count);
+  
+  var url = 'https://api.line.me/v2/bot/message/reply';
+  
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': [{
+        'type': 'text',
+        'text': replyMessage,
+      }],
+    }),
+  });
+  
+  ContentService.createTextOutput(JSON.stringify({'content': 'post ok'})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function Allow(e){
+  var AllowMessage = "";
+  var Genre = e.values[1];
+  var Contents = e.values[2];
+  var sURL = e.values[3];
+  
+  var FormBody = "技術ジャンル：" + "\n" + "${Genre}".replace("${Genre}", Genre) + "\n" + "内容："+ "\n" +"${Contents}".replace("${Contents}", Contents) + "\n" + "参考URL：" + "\n" + "${sURL}".replace("${sURL}", sURL);
+  
+  if (nowCount%20 == 0){
+    AllowMessage = "${nowCount}個達成おめでとう！".replace("${nowCount}", nowCount) + "\n" + "牛乳プリン食っていいぞ！" + "\n" + FormBody;
+  }else{
+    AllowMessage = "${nowCount}個目のメモ！".replace("${nowCount}", nowCount) + "\n" + FormBody;
+  }
+  
+  var url = "https://api.line.me/v2/bot/message/push";
+  
+  UrlFetchApp.fetch(url, {
+    'headers': {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + ACCESS_TOKEN,
+    },
+    'method': 'post',
+    'payload': JSON.stringify({
+      'to': ID,
+      'messages': [{
+        'type': 'text',
+        'text': AllowMessage,
+      }],
+    }),
+  });
+  ContentService.createTextOutput(JSON.stringify({'content': 'post ok'})).setMimeType(ContentService.MimeType.JSON);
+}
